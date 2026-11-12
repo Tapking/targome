@@ -1,1427 +1,207 @@
-"use strict";
 
-const $ = (selector) =>
-  document.querySelector(selector);
+const sourceLang = document.getElementById('sourceLang');
+const targetLang = document.getElementById('targetLang');
+const sourceText = document.getElementById('sourceText');
+const resultText = document.getElementById('resultText');
 
+const translateBtn = document.getElementById('translateBtn');
+const swapBtn = document.getElementById('swapBtn');
+const clearBtn = document.getElementById('clearBtn');
+const copyBtn = document.getElementById('copyBtn');
+const speakBtn = document.getElementById('speakBtn');
+const pasteBtn = document.getElementById('pasteBtn');
 
-/* =========================
-   STATE
-========================= */
+const message = document.getElementById('message');
+const charCount = document.getElementById('charCount');
+const resultLanguage = document.getElementById('resultLanguage');
+const resultStatus = document.getElementById('resultStatus');
 
-const state = {
-  history: loadJSON(
-    "translator_history",
-    []
-  ),
-
-  favorites: loadJSON(
-    "translator_favorites",
-    []
-  ),
-
-  translating: false
+const languages = {
+    fa: 'فارسی',
+    en: 'انگلیسی',
+    tr: 'ترکی استانبولی',
+    ar: 'عربی',
+    auto: 'تشخیص خودکار'
 };
 
-
-/* =========================
-   STORAGE
-========================= */
-
-function loadJSON(key, fallback) {
-  try {
-    const value =
-      JSON.parse(
-        localStorage.getItem(key)
-      );
-
-    return value ?? fallback;
-
-  } catch {
-    return fallback;
-  }
+function notify(text) {
+    message.textContent = text;
 }
 
-
-function saveJSON(key, value) {
-  try {
-    localStorage.setItem(
-      key,
-      JSON.stringify(value)
-    );
-  } catch (error) {
-    console.error(
-      "Storage error:",
-      error
-    );
-  }
+function updateCount() {
+    charCount.textContent =
+        `${sourceText.value.length} / ۵۰۰۰`;
 }
 
-
-/* =========================
-   STATUS
-========================= */
-
-function setStatus(
-  message = "",
-  error = false
-) {
-  const element =
-    $("#status");
-
-  element.textContent =
-    message;
-
-  element.className =
-    "status" +
-    (error ? " error" : "");
+function updateResultLanguage() {
+    resultLanguage.textContent =
+        languages[targetLang.value];
 }
 
+sourceText.addEventListener('input', updateCount);
+targetLang.addEventListener('change', updateResultLanguage);
 
-/* =========================
-   RESULT
-========================= */
+swapBtn.addEventListener('click', () => {
+    if (sourceLang.value === 'auto') {
+        notify('برای جابه‌جایی، اول زبان مبدأ را مشخص کن.');
+        return;
+    }
 
-function getResult() {
-  const element =
-    $("#resultText");
+    const oldSource = sourceLang.value;
+    sourceLang.value = targetLang.value;
+    targetLang.value = oldSource;
 
-  if (
-    element.classList.contains(
-      "placeholder"
-    )
-  ) {
-    return "";
-  }
+    const oldText = sourceText.value;
+    sourceText.value = resultText.textContent ===
+        'ترجمه شما اینجا نمایش داده می‌شود...'
+        ? ''
+        : resultText.textContent;
 
-  return element.textContent.trim();
-}
+    resultText.textContent = oldText ||
+        'ترجمه شما اینجا نمایش داده می‌شود...';
 
+    updateCount();
+    updateResultLanguage();
+    notify('زبان‌ها جابه‌جا شدند.');
+});
 
-function setResult(text) {
-  const element =
-    $("#resultText");
+clearBtn.addEventListener('click', () => {
+    sourceText.value = '';
+    resultText.textContent =
+        'ترجمه شما اینجا نمایش داده می‌شود...';
 
-  if (text) {
+    updateCount();
+    notify('متن پاک شد.');
+});
 
-    element.textContent =
-      text;
+pasteBtn.addEventListener('click', async () => {
+    try {
+        sourceText.value = await navigator.clipboard.readText();
+        updateCount();
+        notify('متن از حافظه کپی شد.');
+    } catch {
+        notify('دسترسی به حافظه کلیپ‌بورد ممکن نیست.');
+    }
+});
 
-    element.classList.remove(
-      "placeholder"
-    );
-
-  } else {
-
-    element.textContent =
-      "ترجمه اینجا نمایش داده می‌شود.";
-
-    element.classList.add(
-      "placeholder"
-    );
-  }
-
-  updateCounts();
-}
-
-
-/* =========================
-   COUNTERS
-========================= */
-
-function updateCounts() {
-
-  const source =
-    $("#sourceText").value;
-
-  const result =
-    getResult();
-
-  $("#sourceCount").textContent =
-    `${source.length} / 5000`;
-
-  $("#targetCount").textContent =
-    result.length;
-}
-
-
-/* =========================
-   LANGUAGE
-========================= */
-
-function detectLanguage(text) {
-
-  if (!text.trim()) {
-    return "fa";
-  }
-
-  const persian =
-    /[\u0600-\u06FF]/;
-
-  return persian.test(text)
-    ? "fa"
-    : "en";
-}
-
-
-function normalizeLanguages() {
-
-  const source =
-    $("#sourceLang").value;
-
-  const target =
-    $("#targetLang").value;
-
-  if (
-    source !== "auto" &&
-    source === target
-  ) {
-
-    $("#targetLang").value =
-      source === "fa"
-        ? "en"
-        : "fa";
-  }
-}
-
-
-/* =========================
-   SWAP
-========================= */
-
-function swapLanguages() {
-
-  let source =
-    $("#sourceLang").value;
-
-  let target =
-    $("#targetLang").value;
-
-
-  if (source === "auto") {
-
-    source =
-      detectLanguage(
-        $("#sourceText").value
-      );
-  }
-
-
-  if (target === source) {
-
-    target =
-      source === "fa"
-        ? "en"
-        : "fa";
-  }
-
-
-  $("#sourceLang").value =
-    target;
-
-  $("#targetLang").value =
-    source;
-
-
-  const sourceText =
-    $("#sourceText").value;
-
-  const result =
-    getResult();
-
-
-  if (result) {
-
-    $("#sourceText").value =
-      result;
-
-    setResult(
-      sourceText
-    );
-  }
-
-
-  setStatus("");
-
-  updateCounts();
-}
-
-
-/* =========================
-   TRANSLATION
-========================= */
+translateBtn.addEventListener('click', translate);
 
 async function translate() {
+    const text = sourceText.value.trim();
 
-  if (
-    state.translating
-  ) {
-    return;
-  }
-
-
-  normalizeLanguages();
-
-
-  const text =
-    $("#sourceText")
-      .value
-      .trim();
-
-
-  if (!text) {
-
-    setStatus(
-      "اول متن را وارد کن.",
-      true
-    );
-
-    $("#sourceText").focus();
-
-    return;
-  }
-
-
-  let source =
-    $("#sourceLang").value;
-
-  const target =
-    $("#targetLang").value;
-
-
-  if (source === "auto") {
-
-    source =
-      detectLanguage(text);
-
-    $("#sourceLang").value =
-      source;
-  }
-
-
-  if (
-    source === target
-  ) {
-
-    setStatus(
-      "زبان ورودی و خروجی باید متفاوت باشند.",
-      true
-    );
-
-    return;
-  }
-
-
-  state.translating =
-    true;
-
-
-  const button =
-    $("#translateBtn");
-
-
-  button.disabled =
-    true;
-
-  button.textContent =
-    "⏳ در حال ترجمه...";
-
-
-  setStatus(
-    "در حال دریافت ترجمه..."
-  );
-
-
-  try {
-
-    const url =
-      "https://api.mymemory.translated.net/get" +
-      `?q=${encodeURIComponent(text)}` +
-      `&langpair=${source}|${target}`;
-
-
-    const response =
-      await fetch(
-        url,
-        {
-          method: "GET",
-
-          headers: {
-            Accept:
-              "application/json"
-          }
-        }
-      );
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        `HTTP_${response.status}`
-      );
+    if (!text) {
+        notify('لطفاً متنی برای ترجمه وارد کن.');
+        return;
     }
 
-
-    const data =
-      await response.json();
-
-
-    const translated =
-      String(
-        data?.responseData
-          ?.translatedText || ""
-      ).trim();
-
-
-    if (!translated) {
-
-      throw new Error(
-        "EMPTY_TRANSLATION"
-      );
+    if (sourceLang.value === targetLang.value) {
+        notify('زبان مبدأ و مقصد نباید یکسان باشند.');
+        return;
     }
 
+    const from = sourceLang.value === 'auto'
+        ? 'autodetect'
+        : sourceLang.value;
 
-    if (
-      data?.responseStatus &&
-      Number(
-        data.responseStatus
-      ) !== 200
-    ) {
+    const to = targetLang.value;
 
-      throw new Error(
-        data.responseDetails ||
-        "TRANSLATION_ERROR"
-      );
-    }
+    translateBtn.disabled = true;
+    translateBtn.querySelector('span').textContent =
+        'در حال ترجمه...';
 
+    resultText.textContent = 'در حال دریافت ترجمه...';
+    resultStatus.textContent = 'در حال پردازش';
 
-    setResult(
-      translated
-    );
-
-
-    addHistory({
-      source,
-      target,
-      text,
-      translated,
-      at: Date.now()
-    });
-
-
-    setStatus(
-      "ترجمه با موفقیت انجام شد. ✓"
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "Translation error:",
-      error
-    );
-
-
-    setStatus(
-      "ترجمه انجام نشد. اینترنت و سرویس ترجمه را بررسی کن.",
-      true
-    );
-
-
-  } finally {
-
-    state.translating =
-      false;
-
-
-    button.disabled =
-      false;
-
-
-    button.textContent =
-      "🌐 ترجمه کن";
-  }
-}
-
-
-/* =========================
-   HISTORY
-========================= */
-
-function addHistory(item) {
-
-  state.history = [
-    item,
-
-    ...state.history.filter(
-      (old) =>
-        !(
-          old.text === item.text &&
-          old.source === item.source &&
-          old.target === item.target
-        )
-    )
-  ].slice(0, 50);
-
-
-  saveJSON(
-    "translator_history",
-    state.history
-  );
-
-
-  renderHistory();
-}
-
-
-function renderHistory() {
-
-  const list =
-    $("#historyList");
-
-  const empty =
-    $("#emptyHistory");
-
-  const search =
-    $("#historySearch")
-      .value
-      .trim()
-      .toLowerCase();
-
-
-  list.innerHTML = "";
-
-
-  const items =
-    state.history.filter(
-      (item) => {
-
-        if (!search) {
-          return true;
-        }
-
-        return (
-          item.text
-            .toLowerCase()
-            .includes(search) ||
-
-          item.translated
-            .toLowerCase()
-            .includes(search)
-        );
-      }
-    );
-
-
-  empty.style.display =
-    items.length
-      ? "none"
-      : "block";
-
-
-  items.forEach(
-    (item) => {
-
-      const row =
-        document.createElement(
-          "article"
+    try {
+        const url = new URL(
+            'https://api.mymemory.translated.net/get'
         );
 
+        url.searchParams.set('q', text);
+        url.searchParams.set('langpair', `${from}|${to}`);
 
-      row.className =
-        "history-item";
-
-
-      row.innerHTML = `
-        <div class="history-top">
-
-          <span>
-            ${
-              item.source === "fa"
-                ? "🇮🇷 فارسی"
-                : "🇬🇧 English"
-            }
-
-            →
-
-            ${
-              item.target === "fa"
-                ? "🇮🇷 فارسی"
-                : "🇬🇧 English"
-            }
-          </span>
-
-          <span>
-            ${new Date(
-              item.at
-            ).toLocaleString(
-              "fa-IR"
-            )}
-          </span>
-
-        </div>
-
-        <div class="history-source"></div>
-
-        <div class="history-target"></div>
-      `;
-
-
-      row.querySelector(
-        ".history-source"
-      ).textContent =
-        item.text;
-
-
-      row.querySelector(
-        ".history-target"
-      ).textContent =
-        item.translated;
-
-
-      row.addEventListener(
-        "click",
-        () => {
-
-          $("#sourceLang").value =
-            item.source;
-
-          $("#targetLang").value =
-            item.target;
-
-          $("#sourceText").value =
-            item.text;
-
-          setResult(
-            item.translated
-          );
-
-          setStatus(
-            "ترجمه از تاریخچه بارگذاری شد."
-          );
-
-          updateCounts();
-
-
-          window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-          });
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('خطای ارتباط با سرویس ترجمه');
         }
-      );
 
+        const data = await response.json();
 
-      list.appendChild(row);
+        if (data.responseStatus !== 200) {
+            throw new Error(
+                data.responseDetails || 'ترجمه انجام نشد.'
+            );
+        }
+
+        const translated =
+            data.responseData?.translatedText;
+
+        if (!translated) {
+            throw new Error('ترجمه‌ای دریافت نشد.');
+        }
+
+        resultText.textContent = translated;
+        resultStatus.textContent = 'ترجمه انجام شد';
+        notify('ترجمه با موفقیت انجام شد.');
+
+    } catch (error) {
+        resultText.textContent =
+            'ترجمه انجام نشد. اتصال اینترنت یا سرویس ترجمه را بررسی کن.';
+
+        resultStatus.textContent = 'خطا';
+        notify(error.message);
+
+    } finally {
+        translateBtn.disabled = false;
+        translateBtn.querySelector('span').textContent =
+            'ترجمه کن';
     }
-  );
 }
 
+copyBtn.addEventListener('click', async () => {
+    const text = resultText.textContent;
 
-/* =========================
-   COPY
-========================= */
-
-async function copyResult() {
-
-  const text =
-    getResult();
-
-
-  if (!text) {
-
-    setStatus(
-      "هنوز ترجمه‌ای وجود ندارد.",
-      true
-    );
-
-    return;
-  }
-
-
-  try {
-
-    if (
-      navigator.clipboard &&
-      window.isSecureContext
-    ) {
-
-      await navigator.clipboard
-        .writeText(text);
-
-    } else {
-
-      const area =
-        document.createElement(
-          "textarea"
-        );
-
-      area.value =
-        text;
-
-      area.style.position =
-        "fixed";
-
-      area.style.opacity =
-        "0";
-
-      document.body.appendChild(
-        area
-      );
-
-      area.focus();
-      area.select();
-
-      document.execCommand(
-        "copy"
-      );
-
-      area.remove();
+    if (!text || text === 'ترجمه شما اینجا نمایش داده می‌شود...') {
+        notify('متنی برای کپی وجود ندارد.');
+        return;
     }
 
+    try {
+        await navigator.clipboard.writeText(text);
+        notify('ترجمه کپی شد.');
+    } catch {
+        notify('کپی خودکار در این محیط پشتیبانی نمی‌شود.');
+    }
+});
 
-    setStatus(
-      "ترجمه کپی شد. ✓"
-    );
+speakBtn.addEventListener('click', () => {
+    const text = resultText.textContent;
 
-  } catch (error) {
-
-    console.error(
-      "Copy error:",
-      error
-    );
-
-    setStatus(
-      "کپی انجام نشد.",
-      true
-    );
-  }
-}
-
-
-/* =========================
-   PASTE
-========================= */
-
-async function pasteText() {
-
-  try {
-
-    if (
-      navigator.clipboard &&
-      navigator.clipboard.readText
-    ) {
-
-      const text =
-        await navigator.clipboard
-          .readText();
-
-      $("#sourceText").value =
-        text.slice(0, 5000);
-
-      updateCounts();
-
-      setStatus(
-        "متن از کلیپ‌بورد وارد شد. ✓"
-      );
-
-      return;
+    if (!text || text === 'ترجمه شما اینجا نمایش داده می‌شود...') {
+        notify('متنی برای پخش وجود ندارد.');
+        return;
     }
 
-
-    setStatus(
-      "مرورگر اجازه دسترسی به کلیپ‌بورد را نداد.",
-      true
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Paste error:",
-      error
-    );
-
-    setStatus(
-      "امکان چسباندن متن وجود ندارد.",
-      true
-    );
-  }
-}
-
-
-/* =========================
-   SPEECH
-========================= */
-
-function speak(
-  text,
-  lang
-) {
-
-  if (!text) {
-
-    setStatus(
-      "متنی برای پخش وجود ندارد.",
-      true
-    );
-
-    return;
-  }
-
-
-  if (
-    !("speechSynthesis" in window)
-  ) {
-
-    setStatus(
-      "پخش صدا در این مرورگر پشتیبانی نمی‌شود.",
-      true
-    );
-
-    return;
-  }
-
-
-  speechSynthesis.cancel();
-
-
-  const utterance =
-    new SpeechSynthesisUtterance(
-      text
-    );
-
-
-  utterance.lang =
-    lang === "fa"
-      ? "fa-IR"
-      : "en-US";
-
-
-  utterance.rate =
-    0.95;
-
-
-  utterance.pitch =
-    1;
-
-
-  speechSynthesis.speak(
-    utterance
-  );
-}
-
-
-/* =========================
-   SHARE
-========================= */
-
-async function shareResult() {
-
-  const result =
-    getResult();
-
-
-  if (!result) {
-
-    setStatus(
-      "اول یک ترجمه انجام بده.",
-      true
-    );
-
-    return;
-  }
-
-
-  const source =
-    $("#sourceText").value;
-
-
-  const shareText =
-    `${source}\n\nترجمه:\n${result}`;
-
-
-  try {
-
-    if (
-      navigator.share
-    ) {
-
-      await navigator.share({
-        title:
-          "ترجمه توسط ترجمان",
-
-        text:
-          shareText
-      });
-
-      return;
+    if (!('speechSynthesis' in window)) {
+        notify('پخش صدا در این مرورگر پشتیبانی نمی‌شود.');
+        return;
     }
 
-
-    await copyText(
-      shareText
-    );
-
-
-    setStatus(
-      "اشتراک‌گذاری در این دستگاه در دسترس نیست؛ متن کپی شد."
-    );
-
-  } catch (error) {
-
-    if (
-      error?.name ===
-      "AbortError"
-    ) {
-      return;
-    }
-
-    console.error(
-      "Share error:",
-      error
-    );
-  }
-}
-
-
-async function copyText(text) {
-
-  if (
-    navigator.clipboard &&
-    window.isSecureContext
-  ) {
-
-    await navigator.clipboard
-      .writeText(text);
-
-    return;
-  }
-
-
-  const area =
-    document.createElement(
-      "textarea"
-    );
-
-  area.value =
-    text;
-
-  area.style.position =
-    "fixed";
-
-  area.style.opacity =
-    "0";
-
-  document.body.appendChild(
-    area
-  );
-
-  area.focus();
-  area.select();
-
-  document.execCommand(
-    "copy"
-  );
-
-  area.remove();
-}
-
-
-/* =========================
-   FAVORITES
-========================= */
-
-function favorite() {
-
-  const result =
-    getResult();
-
-
-  if (!result) {
-
-    setStatus(
-      "اول یک ترجمه انجام بده.",
-      true
-    );
-
-    return;
-  }
-
-
-  const item = {
-
-    source:
-      $("#sourceLang").value,
-
-    target:
-      $("#targetLang").value,
-
-    text:
-      $("#sourceText").value,
-
-    translated:
-      result,
-
-    at:
-      Date.now()
-  };
-
-
-  const exists =
-    state.favorites.some(
-      (x) =>
-        x.text === item.text &&
-        x.translated ===
-          item.translated
-    );
-
-
-  if (exists) {
-
-    setStatus(
-      "این ترجمه قبلاً ذخیره شده است."
-    );
-
-    return;
-  }
-
-
-  state.favorites.unshift(
-    item
-  );
-
-
-  state.favorites =
-    state.favorites.slice(
-      0,
-      50
-    );
-
-
-  saveJSON(
-    "translator_favorites",
-    state.favorites
-  );
-
-
-  $("#favoriteBtn")
-    .textContent =
-    "★ ذخیره شد";
-
-
-  setStatus(
-    "ترجمه به علاقه‌مندی‌ها اضافه شد. ✓"
-  );
-}
-
-
-/* =========================
-   CLEAR HISTORY
-========================= */
-
-function clearHistory() {
-
-  if (
-    !state.history.length
-  ) {
-    return;
-  }
-
-
-  if (
-    !confirm(
-      "همه تاریخچه پاک شود؟"
-    )
-  ) {
-    return;
-  }
-
-
-  state.history = [];
-
-
-  saveJSON(
-    "translator_history",
-    []
-  );
-
-
-  renderHistory();
-
-
-  setStatus(
-    "تاریخچه پاک شد."
-  );
-}
-
-
-/* =========================
-   EXPORT
-========================= */
-
-function exportHistory() {
-
-  if (
-    !state.history.length
-  ) {
-
-    setStatus(
-      "تاریخچه‌ای برای خروجی گرفتن وجود ندارد.",
-      true
-    );
-
-    return;
-  }
-
-
-  const data =
-    JSON.stringify(
-      state.history,
-      null,
-      2
-    );
-
-
-  const blob =
-    new Blob(
-      [data],
-      {
-        type:
-          "application/json;charset=utf-8"
-      }
-    );
-
-
-  const url =
-    URL.createObjectURL(
-      blob
-    );
-
-
-  const link =
-    document.createElement(
-      "a"
-    );
-
-
-  link.href =
-    url;
-
-  link.download =
-    "translator-history.json";
-
-
-  document.body.appendChild(
-    link
-  );
-
-  link.click();
-
-  link.remove();
-
-
-  URL.revokeObjectURL(
-    url
-  );
-
-
-  setStatus(
-    "فایل تاریخچه ساخته شد. ✓"
-  );
-}
-
-
-/* =========================
-   RESET
-========================= */
-
-function resetApp() {
-
-  if (
-    !confirm(
-      "همه اطلاعات برنامه، تاریخچه و علاقه‌مندی‌ها پاک شوند؟"
-    )
-  ) {
-    return;
-  }
-
-
-  try {
-
-    localStorage.removeItem(
-      "translator_history"
-    );
-
-    localStorage.removeItem(
-      "translator_favorites"
-    );
-
-    localStorage.removeItem(
-      "translator_theme"
-    );
-
-  } catch (error) {
-
-    console.error(
-      error
-    );
-  }
-
-
-  location.reload();
-}
-
-
-/* =========================
-   THEME
-========================= */
-
-function initTheme() {
-
-  let saved = null;
-
-  try {
-
-    saved =
-      localStorage.getItem(
-        "translator_theme"
-      );
-
-  } catch {
-    saved = null;
-  }
-
-
-  if (
-    saved === "light"
-  ) {
-
-    document.body.classList.add(
-      "light"
-    );
-  }
-
-
-  updateThemeButton();
-}
-
-
-function updateThemeButton() {
-
-  $("#themeBtn")
-    .textContent =
-    document.body.classList.contains(
-      "light"
-    )
-      ? "☀️"
-      : "🌙";
-}
-
-
-function toggleTheme() {
-
-  document.body.classList.toggle(
-    "light"
-  );
-
-
-  const light =
-    document.body.classList.contains(
-      "light"
-    );
-
-
-  try {
-
-    localStorage.setItem(
-      "translator_theme",
-      light
-        ? "light"
-        : "dark"
-    );
-
-  } catch {
-    // Ignore storage errors.
-  }
-
-
-  updateThemeButton();
-}
-
-
-/* =========================
-   EVENTS
-========================= */
-
-$("#themeBtn")
-  .addEventListener(
-    "click",
-    toggleTheme
-  );
-
-
-$("#swapBtn")
-  .addEventListener(
-    "click",
-    swapLanguages
-  );
-
-
-$("#translateBtn")
-  .addEventListener(
-    "click",
-    translate
-  );
-
-
-$("#pasteBtn")
-  .addEventListener(
-    "click",
-    pasteText
-  );
-
-
-$("#clearBtn")
-  .addEventListener(
-    "click",
-    () => {
-
-      $("#sourceText")
-        .value = "";
-
-      setResult("");
-
-      setStatus("");
-
-      updateCounts();
-
-      $("#sourceText").focus();
-    }
-  );
-
-
-$("#copyBtn")
-  .addEventListener(
-    "click",
-    copyResult
-  );
-
-
-$("#shareBtn")
-  .addEventListener(
-    "click",
-    shareResult
-  );
-
-
-$("#speakSourceBtn")
-  .addEventListener(
-    "click",
-    () =>
-      speak(
-        $("#sourceText").value,
-        $("#sourceLang").value ===
-          "auto"
-          ? detectLanguage(
-              $("#sourceText").value
-            )
-          : $("#sourceLang").value
-      )
-  );
-
-
-$("#speakTargetBtn")
-  .addEventListener(
-    "click",
-    () =>
-      speak(
-        getResult(),
-        $("#targetLang").value
-      )
-  );
-
-
-$("#favoriteBtn")
-  .addEventListener(
-    "click",
-    favorite
-  );
-
-
-$("#clearHistoryBtn")
-  .addEventListener(
-    "click",
-    clearHistory
-  );
-
-
-$("#exportBtn")
-  .addEventListener(
-    "click",
-    exportHistory
-  );
-
-
-$("#resetBtn")
-  .addEventListener(
-    "click",
-    resetApp
-  );
-
-
-$("#historySearch")
-  .addEventListener(
-    "input",
-    renderHistory
-  );
-
-
-$("#sourceText")
-  .addEventListener(
-    "input",
-    updateCounts
-  );
-
-
-$("#sourceLang")
-  .addEventListener(
-    "change",
-    normalizeLanguages
-  );
-
-
-$("#targetLang")
-  .addEventListener(
-    "change",
-    normalizeLanguages
-  );
-
-
-$("#sourceText")
-  .addEventListener(
-    "keydown",
-    (event) => {
-
-      if (
-        (event.ctrlKey ||
-          event.metaKey) &&
-        event.key === "Enter"
-      ) {
-
-        event.preventDefault();
-
-        translate();
-      }
-    }
-  );
-
-
-/* =========================
-   INITIALIZE
-========================= */
-
-initTheme();
-
-renderHistory();
-
-setResult("");
-
-updateCounts();
+    speechSynthesis.cancel();
+
+    const speech = new SpeechSynthesisUtterance(text);
+
+    const lang = targetLang.value;
+    speech.lang = {
+        fa: 'fa-IR',
+        en: 'en-US',
+        tr: 'tr-TR',
+        ar: 'ar-SA'
+    }[lang];
+
+    speech.rate = 0.9;
+    speechSynthesis.speak(speech);
+});
+
+updateCount();
+updateResultLanguage();
