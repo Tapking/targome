@@ -1,312 +1,102 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, viewport-fit=cover">
-
-  <meta name="theme-color" content="#08111f">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-  <meta
-    name="description"
-    content="مترجم فارسی و انگلیسی مخصوص گوشی"
-  >
-
-  <title>ترجمان | مترجم فارسی و انگلیسی</title>
-
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#101827">
+    <title>مترجم هوشمند</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<main class="app">
+<div class="app">
 
-  <!-- Header -->
-  <header class="topbar">
+    <header class="header">
+        <div class="logo">🌐</div>
+        <div>
+            <h1>مترجم هوشمند</h1>
+            <p>ترجمه سریع بین زبان‌های مختلف</p>
+        </div>
+    </header>
 
-    <div>
-      <div class="logo">🌐 ترجمان</div>
-      <div class="subtitle">
-        مترجم فارسی ↔ English
-      </div>
-    </div>
+    <main class="translator">
 
-    <button
-      id="themeBtn"
-      class="icon-btn"
-      type="button"
-      aria-label="تغییر حالت نمایش"
-    >
-      🌙
-    </button>
+        <div class="language-bar">
+            <div class="language-box">
+                <label for="sourceLang">زبان مبدأ</label>
+                <select id="sourceLang">
+                    <option value="fa">فارسی 🇮🇷</option>
+                    <option value="en">انگلیسی 🇬🇧</option>
+                    <option value="tr">ترکی استانبولی 🇹🇷</option>
+                    <option value="ar">عربی 🇸🇦</option>
+                    <option value="auto">تشخیص خودکار</option>
+                </select>
+            </div>
 
-  </header>
+            <button id="swapBtn" class="swap" title="جابه‌جایی زبان‌ها">⇄</button>
 
-
-  <!-- Translator -->
-  <section class="translator-card">
-
-    <!-- Languages -->
-    <div class="language-row">
-
-      <label class="language-box">
-        <span>زبان ورودی</span>
-
-        <select id="sourceLang">
-          <option value="auto">🔎 تشخیص خودکار</option>
-          <option value="fa">🇮🇷 فارسی</option>
-          <option value="en">🇬🇧 English</option>
-        </select>
-      </label>
-
-
-      <button
-        id="swapBtn"
-        class="swap-btn"
-        type="button"
-        aria-label="جابه‌جایی زبان‌ها"
-      >
-        ⇄
-      </button>
-
-
-      <label class="language-box">
-        <span>زبان ترجمه</span>
-
-        <select id="targetLang">
-          <option value="en">🇬🇧 English</option>
-          <option value="fa">🇮🇷 فارسی</option>
-        </select>
-      </label>
-
-    </div>
-
-
-    <!-- Text Areas -->
-    <div class="text-grid">
-
-      <!-- Input -->
-      <section class="text-panel">
-
-        <div class="panel-head">
-          <span>متن ورودی</span>
-          <span id="sourceCount">0 / 5000</span>
+            <div class="language-box">
+                <label for="targetLang">زبان مقصد</label>
+                <select id="targetLang">
+                    <option value="en">انگلیسی 🇬🇧</option>
+                    <option value="fa">فارسی 🇮🇷</option>
+                    <option value="tr">ترکی استانبولی 🇹🇷</option>
+                    <option value="ar">عربی 🇸🇦</option>
+                </select>
+            </div>
         </div>
 
+        <div class="text-area">
+            <div class="area-header">
+                <span>متن ورودی</span>
+                <button id="clearBtn" class="icon-btn">پاک کردن ✕</button>
+            </div>
 
-        <textarea
-          id="sourceText"
-          maxlength="5000"
-          placeholder="متن خود را وارد کنید..."
-          autocomplete="off"
-          autocorrect="on"
-          spellcheck="true"
-        ></textarea>
+            <textarea id="sourceText"
+                placeholder="متن خود را اینجا بنویسید..."
+                maxlength="5000"></textarea>
 
-
-        <div class="panel-actions">
-
-          <button
-            id="pasteBtn"
-            class="secondary-btn"
-            type="button"
-          >
-            📋 چسباندن
-          </button>
-
-          <button
-            id="clearBtn"
-            class="secondary-btn"
-            type="button"
-          >
-            🗑️ پاک کردن
-          </button>
-
-          <button
-            id="speakSourceBtn"
-            class="secondary-btn"
-            type="button"
-          >
-            🔊 پخش
-          </button>
-
+            <div class="area-footer">
+                <span id="charCount">۰ / ۵۰۰۰</span>
+                <button id="pasteBtn" class="small-btn">چسباندن</button>
+            </div>
         </div>
 
-      </section>
+        <button id="translateBtn" class="translate-btn">
+            <span>ترجمه کن</span>
+            <span>✦</span>
+        </button>
 
+        <div class="text-area result-area">
+            <div class="area-header">
+                <span>نتیجه ترجمه</span>
+                <span id="resultLanguage">انگلیسی</span>
+            </div>
 
-      <!-- Result -->
-      <section class="text-panel result-panel">
+            <div id="resultText" class="result-text">
+                ترجمه شما اینجا نمایش داده می‌شود...
+            </div>
 
-        <div class="panel-head">
-          <span>ترجمه</span>
-          <span id="targetCount">0</span>
+            <div class="area-footer">
+                <span id="resultStatus">آماده ترجمه</span>
+                <div class="result-actions">
+                    <button id="copyBtn" class="small-btn">کپی 📋</button>
+                    <button id="speakBtn" class="small-btn">پخش صدا 🔊</button>
+                </div>
+            </div>
         </div>
 
+        <div id="message" class="message"></div>
 
-        <div
-          id="resultText"
-          class="result-text placeholder"
-          dir="auto"
-          aria-live="polite"
-        >
-          ترجمه اینجا نمایش داده می‌شود.
-        </div>
+    </main>
 
+    <footer>
+        <p>مترجم هوشمند | پشتیبانی از فارسی، انگلیسی، ترکی و عربی</p>
+    </footer>
 
-        <div class="panel-actions">
-
-          <button
-            id="copyBtn"
-            class="secondary-btn"
-            type="button"
-          >
-            📋 کپی
-          </button>
-
-          <button
-            id="shareBtn"
-            class="secondary-btn"
-            type="button"
-          >
-            ↗️ اشتراک
-          </button>
-
-          <button
-            id="speakTargetBtn"
-            class="secondary-btn"
-            type="button"
-          >
-            🔊 پخش
-          </button>
-
-          <button
-            id="favoriteBtn"
-            class="secondary-btn"
-            type="button"
-          >
-            ☆ ذخیره
-          </button>
-
-        </div>
-
-      </section>
-
-    </div>
-
-
-    <!-- Translate -->
-    <div class="main-actions">
-
-      <button
-        id="translateBtn"
-        class="translate-btn"
-        type="button"
-      >
-        🌐 ترجمه کن
-      </button>
-
-    </div>
-
-
-    <!-- Status -->
-    <div
-      id="status"
-      class="status"
-      role="status"
-      aria-live="polite"
-    ></div>
-
-  </section>
-
-
-  <!-- History -->
-  <section class="history-card">
-
-    <div class="section-head">
-
-      <h2>🕘 تاریخچه</h2>
-
-      <button
-        id="clearHistoryBtn"
-        class="text-btn"
-        type="button"
-      >
-        پاک کردن همه
-      </button>
-
-    </div>
-
-
-    <div class="search-history">
-
-      <input
-        id="historySearch"
-        type="search"
-        placeholder="🔎 جستجو در تاریخچه..."
-        autocomplete="off"
-      >
-
-    </div>
-
-
-    <div
-      id="historyList"
-      class="history-list"
-    ></div>
-
-
-    <div
-      id="emptyHistory"
-      class="empty"
-    >
-      هنوز ترجمه‌ای ذخیره نشده است.
-    </div>
-
-  </section>
-
-
-  <!-- Settings -->
-  <section class="settings-card">
-
-    <div class="section-head">
-      <h2>⚙️ تنظیمات</h2>
-    </div>
-
-    <div class="settings-grid">
-
-      <button
-        id="exportBtn"
-        class="setting-btn"
-        type="button"
-      >
-        📥 خروجی تاریخچه
-      </button>
-
-      <button
-        id="resetBtn"
-        class="setting-btn danger"
-        type="button"
-      >
-        ♻️ بازنشانی برنامه
-      </button>
-
-    </div>
-
-  </section>
-
-
-  <footer>
-    برای ترجمه واقعی اتصال اینترنت لازم است.
-  </footer>
-
-</main>
-
+</div>
 
 <script src="app.js"></script>
-
 </body>
 </html>
